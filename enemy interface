@@ -1,0 +1,115 @@
+import json
+import random
+
+# Load data from JSON
+def load_game_data():
+    with open("game_data.json", "r") as file:
+        return json.load(file)
+
+# Save updated data back to JSON
+def save_game_data(data):
+    with open("game_data.json", "w") as file:
+        json.dump(data, file, indent=4)
+
+# Load the initial game data
+data = load_game_data()
+player = data["player"]
+enemies = data["enemies"]
+
+# Function to handle leveling up
+def level_up():
+    exp_needed = player["level"] * 100
+    if player["exp"] >= exp_needed:
+        player["exp"] -= exp_needed
+        player["level"] += 1
+        player["attack_power"] += 5
+        player["armor"] += 2
+        player["max_health"] += 20
+        player["health"] = player["max_health"]  # Regenerate health to max
+        print(f"\nCongratulations! You've leveled up to Level {player['level']}!")
+        print(f"New Stats -> Health: {player['health']}/{player['max_health']}, Attack Power: {player['attack_power']}, Armor: {player['armor']}")
+
+# Function to scale enemy stats according to player level
+def get_random_enemy():
+    enemy = random.choice(enemies)
+    scaled_enemy = enemy.copy()
+    level_difference = player["level"] - 1
+    scaled_enemy["level"] += level_difference
+    scaled_enemy["health"] += 30 * level_difference
+    scaled_enemy["attack_power"] += 5 * level_difference
+    scaled_enemy["armor"] += 3 * level_difference
+    scaled_enemy["exp_drop"] += 20 * level_difference
+    scaled_enemy["gold_drop"] += 5 * level_difference
+    return scaled_enemy
+
+# Function to handle combat
+def fight_enemy(enemy):
+    print(f"\nYou encountered a {enemy['name']}!")
+    while player["health"] > 0 and enemy["health"] > 0:
+        # Player's turn
+        print("\nChoose your attack:")
+        print("1. Fire\n2. Ice\n3. Lightning")
+        choice = input("Enter your choice (1/2/3): ")
+        if choice == "1":
+            attack_type = "fire"
+        elif choice == "2":
+            attack_type = "ice"
+        elif choice == "3":
+            attack_type = "lightning"
+        else:
+            print("Invalid choice! You missed your turn.")
+            attack_type = None
+
+        # Player attacks
+        if attack_type:
+            damage = player["attack_power"]
+            if attack_type == enemy["weakness"]:
+                damage *= 2
+                print("Critical hit!")
+            enemy["health"] -= max(0, damage - enemy["armor"])
+            print(f"You dealt {damage} damage. Enemy health: {enemy['health']}")
+
+        # Enemy's turn
+        if enemy["health"] > 0:
+            damage = max(0, enemy["attack_power"] - player["armor"])
+            player["health"] -= damage
+            print(f"The {enemy['name']} attacked and dealt {damage} damage. Your health: {player['health']}")
+
+    # After combat
+    if player["health"] > 0:
+        print(f"\nYou defeated the {enemy['name']}!")
+        player["exp"] += enemy["exp_drop"]
+        player["gold"] += enemy["gold_drop"]
+        print(f"Rewards: {enemy['exp_drop']} EXP, {enemy['gold_drop']} Gold")
+        level_up()
+    else:
+        print("You have been defeated!")
+
+# Main game loop
+def main():
+    print("Welcome to the game!")
+    while True:
+        print("\n1. Fight an Enemy")
+        print("2. View Player Stats")
+        print("3. Exit Game")
+        choice = input("Choose an option: ")
+
+        if choice == "1":
+            enemy = get_random_enemy()
+            fight_enemy(enemy)
+            if player["health"] <= 0:
+                print("Game Over!")
+                break
+        elif choice == "2":
+            print(f"\nPlayer Stats -> Level: {player['level']}, Health: {player['health']}/{player['max_health']}, Attack Power: {player['attack_power']}, Armor: {player['armor']}, EXP: {player['exp']}, Gold: {player['gold']}")
+        elif choice == "3":
+            print("Saving progress and exiting game...")
+            save_game_data(data)  # Save progress before exiting
+            print("Thanks for playing!")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+# Run the game
+if __name__ == "__main__":
+    main()
