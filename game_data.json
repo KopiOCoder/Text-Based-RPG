@@ -1,43 +1,33 @@
-{
-    "player": {
-        "level": 3,
-        "exp": 60,
-        "attack_power": 30,
-        "armor": 24,
-        "max_health": 240,
-        "health": 240,
-        "gold": 150
-    },
-    "enemies": [
+{"enemies": [
         {
-            "name": "Knight",
-            "level": 1,
-            "health": 200,
-            "attack_power": 10,
-            "armor": 30,
-            "weakness": "fire",
-            "exp_drop": 140,
-            "gold_drop": 20
+            "Name": "Knight",
+            "Level": 1,
+            "Health": 120,
+            "Attack Power": 12,
+            "Armor": 10,
+            "Weakness": "fire",
+            "Xp Drop": 140,
+            "Gold Drop": 20
         },
         {
-            "name": "Ninja",
-            "level": 1,
-            "health": 150,
-            "attack_power": 20,
-            "armor": 20,
-            "weakness": "ice",
-            "exp_drop": 120,
-            "gold_drop": 40
+            "Name": "Ninja",
+            "Level": 1,
+            "Health": 85,
+            "Attack Power": 15,
+            "Armor": 5,
+            "Weakness": "ice",
+            "Xp Drop": 120,
+            "Gold Drop": 40
         },
         {
-            "name": "Mage",
-            "level": 1,
-            "health": 100,
-            "attack_power": 30,
-            "armor": 10,
-            "weakness": "lightning",
-            "exp_drop": 100,
-            "gold_drop": 50
+            "Name": "Mage",
+            "Level": 1,
+            "Health": 80,
+            "Attack Power": 20,
+            "Armor": 0,
+            "Weakness": "lightning",
+            "Xp Drop": 100,
+            "Gold Drop": 50
         }
     ]
 }
