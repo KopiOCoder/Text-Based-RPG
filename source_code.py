@@ -9,30 +9,21 @@
 # *************************************************************************
 import json
 import random
+
 def load_user():
-    try:
         with open("user.json", "r") as f:
             return json.load(f)
-    except FileNotFoundError:
-        return[]
-    
+ 
 def load_user_data(user_id):
-    try:
         with open("data.json", "r") as f:
             datas = json.load(f)
             for data in datas:
                 if data["User"] == user_id:
                     return data
-            return []
-    except FileNotFoundError:
-        return []
 
 def save_user_data(user_data):
-    try:
-        with open("data.json", "r") as f:
-            datas = json.load(f)
-    except FileNotFoundError:
-        datas = []
+    with open("data.json", "r") as f:
+        datas = json.load(f)
 
     for i, data in enumerate(datas):
         if data["User"] == user_data["User"]:
@@ -114,6 +105,131 @@ def fight_enemy(player, enemy):
         save_user_data(user_data)
     else:
         print("You have been defeated!")
+        player["Health"] = player["Max Health"]
+        
+def get_boss():
+    boss = {
+        "Name": "Doombringer",
+        "Parts": {
+            "Head": {"Health": 100, "Weakness": "lightning"},
+            "Arms": {"Health": 150, "Weakness": "fire"},
+            "Legs": {"Health": 200, "Weakness": "ice"}
+        },
+        "Attack Power": 30,
+        "Armor": 15,
+        "Xp Drop": 200,
+        "Gold Drop": 50
+    }
+    return boss
+
+def fight_boss(player, boss):
+    print(f"\nA powerful boss appears: {boss['Name']}!")
+    boss_parts = boss["Parts"]
+    
+    while player["Health"] > 0 and any(part["Health"] > 0 for part in boss_parts.values()):
+        print("\nChoose which part to attack:")
+        for part, stats in boss_parts.items():
+            if stats["Health"] > 0:
+                print(f"- {part}: {stats['Health']} HP")
+
+        choice = input("Enter part (Head/Arms/Legs): ").capitalize()
+        
+        if choice in boss_parts and boss_parts[choice]["Health"] > 0:
+            attack_type = input("Choose your attack (Fire/Ice/Lightning): ").lower()
+            damage = player["Attack Power"]
+            
+            if attack_type == boss_parts[choice]["Weakness"]:
+                damage *= 2
+                print("Critical hit!")
+            
+            boss_parts[choice]["Health"] -= max(0, damage - boss["Armor"])
+            print(f"You dealt {max(0, damage - boss['Armor'])} damage to the {choice}.")
+        else:
+            print("Invalid choice or part already destroyed!")
+        
+        # Boss attacks if it still has functional parts
+        if any(part["Health"] > 0 for part in boss_parts.values()):
+            damage = max(0, boss["Attack Power"] - player["Armor"])
+            player["Health"] -= damage
+            print(f"The boss attacks and deals {damage} damage! Your health: {player['Health']}")
+    
+    if player["Health"] > 0:
+        print(f"\nYou defeated {boss['Name']}!")
+        player["Xp"] += boss["Xp Drop"]
+        player["Gold"] += boss["Gold Drop"]
+        print(f"Rewards: {boss['Xp Drop']} EXP, {boss['Gold Drop']} Gold")
+    else:
+        print("You have been defeated!")
+        player["Health"] = player["Max Health"]
+    
+    save_user_data(player)
+
+def display_inventory(user_data):
+    print("\nYour Inventory:")
+    if user_data["Inventory"]:
+        for idx, item in enumerate(user_data["Inventory"], 1):
+            print(f"{idx}. {item['Name']} - {item['Description']} (Value: {item['Value']})")
+    else:
+        print("Your inventory is empty.")
+
+def buy_item(user_data):
+    shop_items = [
+        {"Name": "Health Upgrade", "Description": "Increase Health by 30", "Value": 20},
+        {"Name": "Attack Boost", "Description": "Increases Attack Power by 5", "Value": 30},
+        {"Name": "Armor Upgrade", "Description": "Increases Armor by 3", "Value": 25}
+    ]
+    
+    print("\nShop Items:")
+    for idx, item in enumerate(shop_items, 1):
+        print(f"{idx}. {item['Name']} - {item['Description']} (Cost: {item['Value']} Gold)")
+    
+    choice = int(input("Enter the number of the item you want to buy (or 0 to exit): "))
+    if choice == 0:
+        return
+    
+    if 1 <= choice <= len(shop_items):
+        selected_item = shop_items[choice - 1]
+        if user_data["Gold"] >= selected_item["Value"]:
+            user_data["Gold"] -= selected_item["Value"]
+            user_data["Inventory"].append(selected_item)
+            print(f"You bought {selected_item['Name']}!")
+            if choice ==1 :
+                user_data["Max Health"] += 30
+                user_data["Health"] = user_data["Max Health"]
+            elif choice ==2 :
+                user_data["Attack Power"] += 5
+            else:
+                user_data["Armor"] += 3
+            save_user_data(user_data)
+        else:
+            print("Not enough gold to buy this item.")
+    else:
+        print("Invalid choice.")
+
+def sell_item(user_data):
+    if not user_data["Inventory"]:
+        print("Your inventory is empty. Nothing to sell.")
+        return
+    
+    display_inventory(user_data)
+    choice = int(input("Enter the number of the item you want to sell (or 0 to exit): "))
+    if choice == 0:
+        return
+    
+    if 1 <= choice <= len(user_data["Inventory"]):
+        sold_item = user_data["Inventory"].pop(choice - 1)
+        user_data["Gold"] += sold_item["Value"]
+        print(f"You sold {sold_item['Name']} for {sold_item['Value']} Gold.")
+        if sold_item['Name'] == 'Health Upgrade':
+                user_data["Max Health"] -= 30
+                user_data["Health"] = user_data["Max Health"]
+        elif sold_item['Name'] == 'Attack Boost':
+                user_data["Attack Power"] -= 5
+        else:
+                user_data["Armor"] -= 3
+        save_user_data(user_data)
+    else:
+        print("Invalid choice.")
 
 def main():
     users = load_user()
@@ -127,7 +243,6 @@ def main():
         if login == 1:
             username = input("Enter username:")
             password = input("Enter password:")
-            found = False
             for user in users:
                 if user["Username"] == username and user["Password"] == password:
                     global user_id
@@ -135,16 +250,15 @@ def main():
                     user_id = user["User"]
                     print(user_id)
                     login_count += 1
-                    found = True
                     break
-            if not found:
-                print("Invalid username or password.")
+                else:
+                    print("Invalid username or password.")
 
             
         elif login == 2:
             username = input("Enter username:")
             password = input("Enter password:")
-            user = {"User": user_count, "Username" : username, "Password" : password}
+            user = {"User": user_count, "Username": username, "Password": password}
             user_id = user["User"]
             users.append(user)
             save_user(users) 
@@ -154,52 +268,68 @@ def main():
         else:
             print("Only enter 1 or 2")
 main()
+load_game = 1
+while load_game == 1:
+    play = int(input("1. New game 2. Load game"))
 
-play = int(input("1. New game 2. Load game"))
+    if play == 1:
+        level = 1
+        hp = 100
+        atk = 30
+        armor = 10
+        xp = 0
+        gold = 100
+        inventory_data = []
+        count_login = 1
+        while count_login == 1:
+            combat_class = int(input("Choose your class: 1. Warrior 2. Archer 3. Mage"))
+            if combat_class == 1:
+                combat_type = "Warrior"
+                count_login += 1
 
-if play == 1:
-    level = 1
-    hp = 100
-    atk = 30
-    armor = 10
-    xp = 0
-    gold = 100
-    inventory_data = []
-    combat_class = int(input("Choose your class: 1. Warrior 2. Archer 3. Mage"))
+            elif combat_class == 2:
+                combat_type = "Archer"
+                count_login += 1
 
-    if combat_class == 1:
-        combat_type = "Warrior"
+            elif combat_class == 3:
+                combat_type = "Mage"
+                count_login += 1
 
-    elif combat_class == 2:
-        combat_type = "Archer"
+            else:
+                print("Error, choose either 1, 2 or 3")
 
-    elif combat_class == 3:
-        combat_type = "Mage"
-
-    else:
-        print("Error, choose either 1, 2 or 3")
-
-    user_data = {"User": user_id, "Class": combat_type, "Level": level, "Health": hp, "Max Health": hp, "Attack Power": atk, "Armor": armor, "Gold": gold, "Xp": xp, "Inventory": inventory_data}
-    save_user_data(user_data)
-    print(user_data)
-
-elif play == 2:
-    user_data = load_user_data(user_id)
-    if user_data:
+        user_data = {"User": user_id, "Class": combat_type, "Level": level, "Health": hp, "Max Health": hp, "Attack Power": atk, "Armor": armor, "Gold": gold, "Xp": xp, "Inventory": inventory_data}
+        save_user_data(user_data)
         print(user_data)
-else:
-    print("Only enter 1 or 2")
-    
+        load_game += 1
+    elif play == 2:
+        user_data = load_user_data(user_id)
+        print(user_data)
+        load_game += 1
+    else:
+        print("Only enter 1 or 2")
+
+
 game_count = 1
 while game_count == 1:
-    game_choice = int(input("1. Fight monsters 2. Fight boss 3.Shop"))
+    game_choice = int(input("1. Fight monsters 2. Fight boss 3. Shop 4. See Inventory 5. Quit"))
     if game_choice == 1:
         fight_enemy(user_data, get_random_enemy(user_data))
     elif game_choice == 2:
-        print("hi")
+        fight_boss(user_data, get_boss())
 
     elif game_choice == 3:
-        print('hello')
-
+        shop_choice = int(input("\n1. Buy Item\n2. Sell Item\nEnter your choice: "))
+        if shop_choice == 1:
+            buy_item(user_data)
+        elif shop_choice == 2:
+            sell_item(user_data)
+        else:
+            print("Invalid choice.")
+    elif game_choice == 4:
+        display_inventory(user_data)
+    elif game_choice == 5:
+        print("Exiting game. Goodbye!")
+        game_count = 0
     else:
-        print("Only type 1, 2 or 3")
+        print("Only type 1, 2, 3, 4, or 5.")
