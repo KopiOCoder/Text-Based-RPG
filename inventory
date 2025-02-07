@@ -8,7 +8,7 @@ def display_inventory(user_data):
 
 def buy_item(user_data):
     shop_items = [
-        {"Name": "Health Potion", "Description": "Restores 50 HP", "Value": 20},
+        {"Name": "Health Upgrade", "Description": "Increase Health by 30", "Value": 20},
         {"Name": "Attack Boost", "Description": "Increases Attack Power by 5", "Value": 30},
         {"Name": "Armor Upgrade", "Description": "Increases Armor by 3", "Value": 25}
     ]
@@ -27,6 +27,14 @@ def buy_item(user_data):
             user_data["Gold"] -= selected_item["Value"]
             user_data["Inventory"].append(selected_item)
             print(f"You bought {selected_item['Name']}!")
+            if choice ==1 :
+                user_data["Max Health"] += 30
+                user_data["Health"] = user_data["Max Health"]
+            elif choice ==2 :
+                user_data["Attack Power"] += 5
+            else:
+                user_data["Armor"] += 3
+            save_user_data(user_data)
         else:
             print("Not enough gold to buy this item.")
     else:
@@ -46,17 +54,26 @@ def sell_item(user_data):
         sold_item = user_data["Inventory"].pop(choice - 1)
         user_data["Gold"] += sold_item["Value"]
         print(f"You sold {sold_item['Name']} for {sold_item['Value']} Gold.")
+        if sold_item['Name'] == 'Health Upgrade':
+                user_data["Max Health"] -= 30
+                user_data["Health"] = user_data["Max Health"]
+        elif sold_item['Name'] == 'Attack Boost':
+                user_data["Attack Power"] -= 5
+        else:
+                user_data["Armor"] -= 3
+        save_user_data(user_data)
     else:
         print("Invalid choice.")
 
 # Update the main game loop to include inventory management
 game_count = 1
 while game_count == 1:
-    game_choice = int(input("\n1. Fight monsters\n2. Fight boss\n3. Shop\n4. View Inventory\n5. Exit Game\nEnter your choice: "))
+    game_choice = int(input("1. Fight monsters 2. Fight boss 3. Shop 4. See Inventory 5. Quit"))
     if game_choice == 1:
         fight_enemy(user_data, get_random_enemy(user_data))
     elif game_choice == 2:
-        print("Boss fight coming soon!")
+        fight_boss(user_data, get_boss())
+
     elif game_choice == 3:
         shop_choice = int(input("\n1. Buy Item\n2. Sell Item\nEnter your choice: "))
         if shop_choice == 1:
@@ -66,7 +83,7 @@ while game_count == 1:
         else:
             print("Invalid choice.")
     elif game_choice == 4:
-        display_inventory(user_data)4
+        display_inventory(user_data)
     elif game_choice == 5:
         print("Exiting game. Goodbye!")
         game_count = 0
